@@ -2,21 +2,21 @@
   "name": "YTVault — Biblioteca de Vídeos",
   "short_name": "YTVault",
   "description": "Baixe e organize seus vídeos do YouTube numa biblioteca pessoal",
-  "start_url": "/ytvault/",
-  "scope": "/ytvault/",
+  "start_url": "/Ytvault-/",
+  "scope": "/Ytvault-/",
   "display": "standalone",
   "background_color": "#0c0d0f",
   "theme_color": "#e8ff47",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/ytvault/icon-192.png",
+      "src": "/Ytvault-/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/ytvault/icon-512.png",
+      "src": "/Ytvault-/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
