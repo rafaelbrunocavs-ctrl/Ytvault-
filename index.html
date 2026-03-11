@@ -959,6 +959,7 @@
 
   /* ── MOBILE RESPONSIVE ── */
   @media (max-width: 768px) {
+    .video-actions { opacity: 1; background: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent); padding: 4px; border-radius: 0 var(--radius) 0 0; }
     .sidebar { width: 280px; transform: translateX(-100%); transition: transform 0.3s ease; z-index: 300; }
     .sidebar.open { transform: translateX(0); }
     .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 299; }
@@ -1302,6 +1303,7 @@ function videoCard(v) {
       <div class="video-play-btn"><div class="play-circle">▶</div></div>
     </div>
     <div class="video-actions" onclick="event.stopPropagation()">
+      <button class="action-btn" onclick="saveToDevice(${v.id})" title="Salvar no celular">💾</button>
       <button class="action-btn" onclick="toggleFav(${v.id})" title="Favoritar">${v.favorite?'♥':'♡'}</button>
       <button class="action-btn" onclick="removeVideo(${v.id})" title="Remover">🗑</button>
     </div>
@@ -1321,7 +1323,7 @@ function videoListItem(v) {
   <div class="video-list-item">
     <div class="list-thumb"><img src="${v.thumb}" alt="${v.title}" loading="lazy"></div>
     <div class="list-info">
-      <div class="list-title">${v.title}</div>
+      <div class="list-title" onclick="openVideo('${v.id}')" style="cursor:pointer">${v.title}</div>
       <div class="list-meta">
         <span>📺 ${v.channel}</span>
         <span>⏱ ${v.duration}</span>
@@ -1331,6 +1333,7 @@ function videoListItem(v) {
     </div>
     <div class="list-right">
       <div class="video-quality">${v.quality} · ${v.format}</div>
+      <button class="action-btn" style="opacity:1;background:var(--surface2)" onclick="saveToDevice('${v.id}')" title="Salvar no celular">💾</button>
       <button class="action-btn" style="opacity:1;background:var(--surface2)" onclick="toggleFav(${v.id})">${v.favorite?'♥':'♡'}</button>
       <button class="action-btn" style="opacity:1;background:var(--surface2)" onclick="removeVideo(${v.id})">🗑</button>
     </div>
@@ -1510,7 +1513,29 @@ function toggleFav(id) {
 function openVideo(id) {
   const v = library.find(v=>v.id===id);
   if(!v) return;
-  showToast(`Abrindo: ${v.title.substring(0,40)}…`,'info');
+  if(!API) { showToast('API não configurada','error'); return; }
+  window.open(`${API}/download-file/${v.id}`, '_blank');
+  showToast(`Abrindo: ${v.title.substring(0,35)}…`, 'info');
+}
+
+async function saveToDevice(id) {
+  const v = library.find(v=>v.id===id);
+  if(!v) return;
+  if(!API) { showToast('API não configurada','error'); return; }
+  showToast(`Preparando download de "${v.title.substring(0,30)}…"`, 'info');
+  try {
+    const url = `${API}/download-file/${v.id}`;
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = v.filename || `${v.title}.${v.format}`;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    showToast('💾 Salvando na pasta Downloads!', 'success');
+  } catch(e) {
+    showToast('Erro ao salvar: ' + e.message, 'error');
+  }
 }
 
 // ─────────────────────────────────────────────
