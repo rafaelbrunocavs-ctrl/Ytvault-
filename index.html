@@ -1309,9 +1309,9 @@ function videoCard(v) {
         <div class="video-quality">${v.quality}</div>
       </div>
       <div style="display:flex;gap:6px;margin-top:8px">
-        <button onclick="saveToDevice('${v.id}')" style="flex:1;padding:7px;background:var(--accent);color:#000;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">💾 Salvar</button>
-        <button onclick="toggleFav(${v.id})" style="width:34px;background:var(--surface2);color:var(--text-muted);border:1px solid var(--border);border-radius:8px;font-size:14px;cursor:pointer">${v.favorite?'♥':'♡'}</button>
-        <button onclick="removeVideo('${v.id}')" style="width:34px;background:var(--surface2);color:var(--text-muted);border:1px solid var(--border);border-radius:8px;font-size:14px;cursor:pointer">🗑</button>
+        <button onclick="event.stopPropagation();saveToDevice('${v.id}')" style="flex:1;padding:7px;background:var(--accent);color:#000;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">💾 Salvar</button>
+        <button onclick="event.stopPropagation();toggleFav('${v.id}')" style="width:34px;background:var(--surface2);color:var(--text-muted);border:1px solid var(--border);border-radius:8px;font-size:14px;cursor:pointer">${v.favorite?'♥':'♡'}</button>
+        <button onclick="event.stopPropagation();removeVideo('${v.id}')" style="width:34px;background:var(--surface2);color:var(--text-muted);border:1px solid var(--border);border-radius:8px;font-size:14px;cursor:pointer">🗑</button>
       </div>
     </div>
   </div>`;
@@ -1510,7 +1510,7 @@ function toggleFav(id) {
 }
 
 function openVideo(id) {
-  const v = library.find(v=>v.id===id);
+  const v = library.find(v => String(v.id) === String(id));
   if(!v) return;
   if(!API) { showToast('API não configurada','error'); return; }
   window.open(`${API}/download-file/${v.id}`, '_blank');
@@ -1518,7 +1518,7 @@ function openVideo(id) {
 }
 
 async function saveToDevice(id) {
-  const v = library.find(v=>v.id===id);
+  const v = library.find(v => String(v.id) === String(id));
   if(!v) return;
   if(!API) { showToast('API não configurada','error'); return; }
   showToast(`Preparando download de "${v.title.substring(0,30)}…"`, 'info');
