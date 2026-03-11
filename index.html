@@ -1513,8 +1513,9 @@ function openVideo(id) {
   const v = library.find(v => String(v.id) === String(id));
   if(!v) return;
   if(!API) { showToast('API não configurada','error'); return; }
-  showToast(`Abrindo no player…`, 'info');
-  location.href = `${API}/download-file/${v.id}`;
+  // Abre no Chrome externo — Android reconhece MP4 e oferece player nativo
+  const url = `${API}/download-file/${v.id}`;
+  window.open(`intent://${url.replace('https://','')}#Intent;scheme=https;action=android.intent.action.VIEW;type=video/mp4;end`, '_blank');
 }
 
 async function saveToDevice(id) {
