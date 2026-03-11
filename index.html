@@ -1232,23 +1232,17 @@
 
 <script>
 // ─────────────────────────────────────────────
+// CONFIG — cole a URL do seu backend Railway aqui
+// ─────────────────────────────────────────────
+const API = "https://web-production-8088b.up.railway.app"; // ex: "https://ytvault-backend.up.railway.app"
+
+// ─────────────────────────────────────────────
 // STATE
 // ─────────────────────────────────────────────
 let currentView = 'grid';
 let currentFilter = 'all';
-let selectedQuality = '2160p';
+let selectedQuality = '1080p';
 let selectedFormat = 'mp4';
-
-const sampleVideos = [
-  { id: 1, title: 'Como dominar Git e GitHub em 2024 — guia completo', channel: 'Código Limpo', duration: '1:23:45', quality: '1080p', format: 'mp4', size: 1.2, category: 'Tecnologia', date: Date.now() - 86400000, favorite: false, thumb: 'https://picsum.photos/seed/git/320/180', tags: ['git','programação'] },
-  { id: 2, title: 'Lo-fi Beats to Study and Focus — 2 Hours', channel: 'ChillWave', duration: '2:00:00', quality: '720p', format: 'mp4', size: 0.8, category: 'Música', date: Date.now() - 172800000, favorite: true, thumb: 'https://picsum.photos/seed/lofi/320/180', tags: ['lofi','estudo'] },
-  { id: 3, title: 'Python para Data Science — Machine Learning do zero', channel: 'DataLearn BR', duration: '3:15:20', quality: '1080p', format: 'mp4', size: 2.1, category: 'Educação', date: Date.now() - 259200000, favorite: false, thumb: 'https://picsum.photos/seed/python/320/180', tags: ['python','ia'] },
-  { id: 4, title: 'Top 10 Gols Mais Bonitos — Champions League 2024', channel: 'Futebol Global', duration: '0:12:30', quality: '4K', format: 'mp4', size: 0.4, category: 'Esportes', date: Date.now() - 345600000, favorite: true, thumb: 'https://picsum.photos/seed/soccer/320/180', tags: ['futebol','gols'] },
-  { id: 5, title: 'The Dark Knight — Análise completa do roteiro', channel: 'Cinema Análise', duration: '0:45:00', quality: '1080p', format: 'mkv', size: 0.6, category: 'Entretenimento', date: Date.now() - 432000000, favorite: false, thumb: 'https://picsum.photos/seed/cinema/320/180', tags: ['cinema','batman'] },
-  { id: 6, title: 'React 18 — O que mudou e como migrar', channel: 'FrontDev', duration: '0:38:14', quality: '1080p', format: 'mp4', size: 0.5, category: 'Tecnologia', date: Date.now() - 518400000, favorite: false, thumb: 'https://picsum.photos/seed/react/320/180', tags: ['react','web'] },
-  { id: 7, title: 'Beethoven — Moonlight Sonata (performance completa)', channel: 'Classical Masters', duration: '0:17:05', quality: '2160p', format: 'mp4', size: 0.9, category: 'Música', date: Date.now() - 604800000, favorite: true, thumb: 'https://picsum.photos/seed/beethoven/320/180', tags: ['clássica','piano'] },
-  { id: 8, title: 'Física Quântica para Leigos — aula 1', channel: 'Prof. Silva', duration: '0:52:40', quality: '720p', format: 'mp4', size: 0.4, category: 'Educação', date: Date.now() - 691200000, favorite: false, thumb: 'https://picsum.photos/seed/quantum/320/180', tags: ['física','ciência'] },
-];
 
 let library = [];
 let queue = [];
@@ -1380,92 +1374,102 @@ function updateStats() {
 // ─────────────────────────────────────────────
 // ACTIONS
 // ─────────────────────────────────────────────
-function addToQueue() {
+async function addToQueue() {
   const url = document.getElementById('url-input').value.trim();
   if (!url) { showToast('Cole um link do YouTube!','error'); return; }
   if (!url.includes('youtube.com') && !url.includes('youtu.be')) {
     showToast('Link inválido — use um URL do YouTube','error'); return;
   }
 
-  const item = {
-    id: nextId++,
-    url,
-    quality: selectedQuality,
-    format: selectedFormat,
-    title: 'Buscando informações do vídeo…',
-    progress: 0,
-    status: 'queue'
-  };
+  if (!API) {
+    showToast('⚠️ Configure a URL do backend no arquivo index.html!','error');
+    return;
+  }
+
+  // Busca metadados primeiro
+  const localId = nextId++;
+  const item = { id: localId, url, quality: selectedQuality, format: selectedFormat,
+    title: 'Buscando informações do vídeo…', progress: 0, status: 'queue', jobId: null };
   queue.unshift(item);
   document.getElementById('url-input').value = '';
   renderAll();
-  showToast('Adicionado à fila de download!','info');
-  simulateDownload(item.id);
-}
 
-function simulateDownload(id) {
-  const item = queue.find(q=>q.id===id);
-  if(!item) return;
+  try {
+    // 1. Busca metadados
+    const meta = await fetch(`${API}/metadata`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({url})
+    }).then(r => r.json());
 
-  // Simulate fetching metadata
-  setTimeout(()=>{
-    item.title = sampleTitles[Math.floor(Math.random()*sampleTitles.length)];
+    item.title = meta.title || 'Título desconhecido';
+    item.thumb = meta.thumbnail || '';
+    renderQueue();
+
+    // 2. Inicia download
+    const {job_id} = await fetch(`${API}/download`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({url, quality: selectedQuality, format: selectedFormat})
+    }).then(r => r.json());
+
+    item.jobId = job_id;
     item.status = 'downloading';
     renderQueue();
-  }, 800);
+    showToast(`Baixando: ${item.title.substring(0,35)}…`, 'info');
+    pollProgress(localId, job_id);
 
-  // Simulate progress
-  let prog = 0;
-  const interval = setInterval(()=>{
-    prog += Math.random()*8 + 2;
-    if(prog >= 100) {
-      prog = 100;
+  } catch(e) {
+    item.status = 'error';
+    renderQueue();
+    showToast('Erro ao conectar com o servidor. Verifique a API.', 'error');
+  }
+}
+
+function pollProgress(localId, jobId) {
+  const interval = setInterval(async () => {
+    try {
+      const data = await fetch(`${API}/progress/${jobId}`).then(r => r.json());
+      const item = queue.find(q => q.id === localId);
+      if (!item) { clearInterval(interval); return; }
+
+      item.progress = data.progress || 0;
+      item.status = data.status === 'done' ? 'done' : data.status === 'error' ? 'error' : 'downloading';
+      item.speed = data.speed || '';
+
+      const pf = document.getElementById(`pf-${localId}`);
+      const pt = document.getElementById(`pt-${localId}`);
+      if(pf) pf.style.width = item.progress + '%';
+      if(pt) pt.textContent = item.status === 'done' ? 'Concluído' : item.progress + '%';
+
+      if (data.status === 'done') {
+        clearInterval(interval);
+        item.status = 'done';
+        if (data.info) {
+          library.unshift({...data.info, favorite: false});
+        }
+        renderAll();
+        showToast(`"${item.title.substring(0,35)}…" baixado com sucesso! ✅`, 'success');
+        // Recarrega biblioteca do servidor
+        loadLibrary();
+      } else if (data.status === 'error') {
+        clearInterval(interval);
+        showToast(`Erro ao baixar: ${data.error || 'desconhecido'}`, 'error');
+        renderQueue();
+      }
+    } catch(e) {
       clearInterval(interval);
-      item.progress = 100;
-      item.status = 'done';
-      renderQueue();
-      updateStats();
-      // Add to library
-      const newVid = {
-        id: item.id,
-        title: item.title,
-        channel: 'Canal Desconhecido',
-        duration: randomDuration(),
-        quality: item.quality,
-        format: item.format,
-        size: Math.random()*1.5+0.2,
-        category: randomCategory(),
-        date: Date.now(),
-        favorite: false,
-        thumb: `https://picsum.photos/seed/${item.id}/320/180`,
-        tags: ['baixado']
-      };
-      library.unshift(newVid);
-      renderAll();
-      showToast(`"${item.title.substring(0,40)}…" baixado com sucesso!`,'success');
-      return;
     }
-    item.progress = Math.round(prog);
-    const pf = document.getElementById(`pf-${id}`);
-    const pt = document.getElementById(`pt-${id}`);
-    if(pf) pf.style.width = prog+'%';
-    if(pt) pt.textContent = Math.round(prog)+'%';
-  }, 400);
+  }, 1500);
 }
 
-const sampleTitles = [
-  'Como construir APIs REST com Node.js','Top 20 músicas indie de 2024','Filosofia Estoica na prática','História do Esporte Olímpico','JavaScript Avançado — Async/Await','Universo e Cosmologia — Aula 1','Culinária Italiana para iniciantes','Meditação guiada — 20 minutos'
-];
-
-function randomDuration() {
-  const h = Math.random()>0.7?Math.floor(Math.random()*2+1):0;
-  const m = Math.floor(Math.random()*60);
-  const s = Math.floor(Math.random()*60);
-  return h?`${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`: `${m}:${String(s).padStart(2,'0')}`;
-}
-
-function randomCategory() {
-  return ['Tecnologia','Música','Educação','Entretenimento','Esportes'][Math.floor(Math.random()*5)];
+async function loadLibrary() {
+  if (!API) return;
+  try {
+    const data = await fetch(`${API}/library`).then(r => r.json());
+    library = data.map(v => ({...v, favorite: v.favorite || false}));
+    renderAll();
+  } catch(e) {
+    // API offline, mantém biblioteca local
+  }
 }
 
 function removeQueue(id) {
@@ -1478,7 +1482,12 @@ function clearDone() {
   renderAll();
 }
 
-function removeVideo(id) {
+async function removeVideo(id) {
+  if (API) {
+    try {
+      await fetch(`${API}/library/${id}`, {method: 'DELETE'});
+    } catch(e) {}
+  }
   library = library.filter(v=>v.id!==id);
   renderAll();
   showToast('Vídeo removido da biblioteca','info');
@@ -1619,6 +1628,7 @@ function focusDownload() {
 // INIT
 // ─────────────────────────────────────────────
 renderAll();
+loadLibrary();
 
 // Service Worker desativado - compatibilidade GitHub Pages
 
