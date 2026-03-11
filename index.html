@@ -1513,25 +1513,28 @@ function openVideo(id) {
   const v = library.find(v => String(v.id) === String(id));
   if(!v) return;
   if(!API) { showToast('API não configurada','error'); return; }
-  window.open(`${API}/download-file/${v.id}`, '_blank');
-  showToast(`Abrindo: ${v.title.substring(0,35)}…`, 'info');
+  showToast(`Abrindo no player…`, 'info');
+  location.href = `${API}/download-file/${v.id}`;
 }
 
 async function saveToDevice(id) {
   const v = library.find(v => String(v.id) === String(id));
   if(!v) return;
   if(!API) { showToast('API não configurada','error'); return; }
-  showToast(`Preparando download de "${v.title.substring(0,30)}…"`, 'info');
+  showToast('⏳ Preparando arquivo…', 'info');
   try {
-    const url = `${API}/download-file/${v.id}`;
+    const response = await fetch(`${API}/download-file/${v.id}`);
+    if(!response.ok) throw new Error('Arquivo não encontrado');
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
+    a.href = blobUrl;
     a.download = v.filename || `${v.title}.${v.format}`;
-    a.style.display = 'none';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    showToast('💾 Salvando na pasta Downloads!', 'success');
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+    showToast('💾 Salvo na pasta Downloads!', 'success');
   } catch(e) {
     showToast('Erro ao salvar: ' + e.message, 'error');
   }
