@@ -1220,6 +1220,15 @@
         <option>Não — salvar tudo na mesma pasta</option>
       </select>
     </div>
+    <div class="form-group">
+      <label class="form-label">🍪 Cookies do YouTube <span style="color:var(--accent);font-size:10px;text-transform:none;letter-spacing:0">— resolve erro 403</span></label>
+      <textarea class="form-input" id="cookies-input" rows="5" placeholder="Cole aqui o conteúdo do arquivo cookies.txt exportado do seu navegador..." style="resize:vertical;font-size:11px;font-family:monospace"></textarea>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:6px">
+        Instale a extensão <strong style="color:var(--text)">Get cookies.txt LOCALLY</strong> no Chrome, acesse youtube.com logado, exporte os cookies e cole acima.
+      </div>
+      <button class="btn btn-ghost" onclick="saveCookies()" style="margin-top:8px;width:100%;justify-content:center">Enviar cookies para o servidor</button>
+      <div id="cookies-status" style="font-size:11px;margin-top:6px;color:var(--text-muted)"></div>
+    </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
       <button class="btn btn-primary" onclick="saveSettings()">Salvar</button>
@@ -1234,7 +1243,7 @@
 // ─────────────────────────────────────────────
 // CONFIG — cole a URL do seu backend Railway aqui
 // ─────────────────────────────────────────────
-const API = "https://web-production-8088b.up.railway.app"; // ex: "https://ytvault-backend.up.railway.app"
+const API = null; // ex: "https://ytvault-backend.up.railway.app"
 
 // ─────────────────────────────────────────────
 // STATE
@@ -1596,6 +1605,25 @@ function selectQualityModal(el) {
 function saveSettings() {
   closeModal();
   showToast('Configurações salvas com sucesso!','success');
+}
+
+async function saveCookies() {
+  const content = document.getElementById('cookies-input').value.trim();
+  const status = document.getElementById('cookies-status');
+  if (!content) { status.textContent = '⚠️ Cole o conteúdo dos cookies primeiro.'; return; }
+  if (!API) { status.textContent = '⚠️ Configure a URL da API primeiro.'; return; }
+  try {
+    status.textContent = 'Enviando…';
+    const res = await fetch(`${API}/cookies`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({content})
+    }).then(r => r.json());
+    status.innerHTML = `<span style="color:var(--green)">✅ Cookies salvos! (${res.lines} linhas)</span>`;
+    showToast('Cookies enviados! Tente baixar de novo.', 'success');
+  } catch(e) {
+    status.innerHTML = `<span style="color:var(--red)">❌ Erro ao enviar: ${e.message}</span>`;
+  }
 }
 
 // ─────────────────────────────────────────────
