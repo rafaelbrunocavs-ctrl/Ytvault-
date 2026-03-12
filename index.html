@@ -1105,26 +1105,24 @@
       <div class="section-sub">Cole o link do YouTube abaixo para adicionar à fila</div>
 
       <div class="url-input-row">
-        <input class="url-input" type="text" id="url-input" placeholder="https://youtube.com/watch?v=..." oninput="onUrlInput()" onpaste="setTimeout(onUrlInput,100)" />
+        <input class="url-input" type="text" id="url-input" placeholder="https://youtube.com/watch?v=..." />
         <button class="btn btn-primary" onclick="addToQueue()">⬇ Baixar</button>
       </div>
 
-      <div id="quality-section" style="margin-top:14px;display:none">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <span style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;font-weight:500">Qualidade disponível</span>
-          <span id="quality-loading" style="font-size:11px;color:var(--text-dim)"></span>
-        </div>
-        <div class="options-row" id="quality-chips" style="margin-bottom:10px"></div>
-        <div class="options-row">
-          <span style="font-size:12px;color:var(--text-muted);margin-right:4px">Formato:</span>
-          <div class="option-chip selected" onclick="selectFormat(this,'mp4')">MP4</div>
-          <div class="option-chip" onclick="selectFormat(this,'webm')">WebM</div>
-          <div class="option-chip" onclick="selectFormat(this,'mkv')">MKV</div>
-          <div class="option-chip" onclick="selectFormat(this,'audio')">🎵 Só áudio</div>
-        </div>
+      <div class="options-row" style="margin-top:14px">
+        <span style="font-size:12px;color:var(--text-muted);margin-right:4px">Qualidade:</span>
+        <div class="option-chip" onclick="selectQuality(this,'2160p')">4K</div>
+        <div class="option-chip" onclick="selectQuality(this,'1080p')">1080p</div>
+        <div class="option-chip selected" onclick="selectQuality(this,'720p')">720p</div>
+        <div class="option-chip" onclick="selectQuality(this,'480p')">480p</div>
+        <div class="option-chip" onclick="selectQuality(this,'360p')">360p</div>
+        <div class="option-chip" onclick="selectQuality(this,'audio')">🎵 Áudio</div>
       </div>
-      <div id="quality-placeholder" style="margin-top:14px;padding:10px;background:var(--surface2);border-radius:9px;border:1px solid var(--border);font-size:12px;color:var(--text-dim);text-align:center">
-        Cole um link acima para ver as qualidades disponíveis
+      <div class="options-row" style="margin-top:8px">
+        <span style="font-size:12px;color:var(--text-muted);margin-right:4px">Formato:</span>
+        <div class="option-chip selected" onclick="selectFormat(this,'mp4')">MP4</div>
+        <div class="option-chip" onclick="selectFormat(this,'webm')">WebM</div>
+        <div class="option-chip" onclick="selectFormat(this,'mkv')">MKV</div>
       </div>
 
       <div style="margin-top:14px">
@@ -1475,31 +1473,25 @@ async function addToQueue() {
 
   const selectedColId = document.getElementById('collection-select')?.value || '';
 
-  // Usa título já buscado pelo onUrlInput se disponível
-  const cachedTitle = document.getElementById('quality-chips')?.dataset?.title || 'Buscando…';
   const localId = nextId++;
   const item = { id: localId, url, quality: selectedQuality, format: selectedFormat,
-    title: cachedTitle, progress: 0, status: 'queue', jobId: null, colId: selectedColId };
+    title: 'Buscando informações…', progress: 0, status: 'queue', jobId: null, colId: selectedColId };
   queue.unshift(item);
   document.getElementById('url-input').value = '';
-  // Reset quality UI
-  document.getElementById('quality-section').style.display = 'none';
-  document.getElementById('quality-placeholder').style.display = 'block';
   renderAll();
 
   try {
-    // Busca metadados se não tiver título ainda
-    if (item.title === 'Buscando…') {
-      const meta = await fetch(`${API}/metadata`, {
-        method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({url})
-      }).then(r => r.json());
-      item.title = meta.title || 'Título desconhecido';
-      item.thumb = meta.thumbnail || '';
-      renderQueue();
-    }
+    // 1. Busca metadados
+    const meta = await fetch(`${API}/metadata`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({url})
+    }).then(r => r.json());
 
-    // Inicia download com qualidade selecionada
+    item.title = meta.title || 'Título desconhecido';
+    item.thumb = meta.thumbnail || '';
+    renderQueue();
+
+    // 2. Inicia download
     const {job_id} = await fetch(`${API}/download`, {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({url, quality: selectedQuality, format: selectedFormat})
@@ -1508,7 +1500,7 @@ async function addToQueue() {
     item.jobId = job_id;
     item.status = 'downloading';
     renderQueue();
-    showToast(`Baixando em ${selectedQuality}: ${item.title.substring(0,30)}…`, 'info');
+    showToast(`Baixando: ${item.title.substring(0,35)}…`, 'info');
     pollProgress(localId, job_id);
 
   } catch(e) {
@@ -1800,71 +1792,17 @@ function renderLibrarySpecial(mode) {
 // ─────────────────────────────────────────────
 // QUALITY / FORMAT
 // ─────────────────────────────────────────────
-let urlFetchTimer = null;
-
-function onUrlInput() {
-  const url = document.getElementById('url-input').value.trim();
-  if (!url || (!url.includes('youtube.com') && !url.includes('youtu.be'))) {
-    document.getElementById('quality-section').style.display = 'none';
-    document.getElementById('quality-placeholder').style.display = 'block';
-    return;
-  }
-  // Debounce — espera 800ms após parar de digitar
-  clearTimeout(urlFetchTimer);
-  urlFetchTimer = setTimeout(() => fetchQualities(url), 800);
-  document.getElementById('quality-loading').textContent = 'Buscando qualidades…';
-  document.getElementById('quality-section').style.display = 'block';
-  document.getElementById('quality-placeholder').style.display = 'none';
-  document.getElementById('quality-chips').innerHTML = `
-    <div style="display:flex;gap:6px">
-      ${[1,2,3,4].map(()=>`<div style="width:80px;height:30px;background:var(--surface2);border-radius:8px;animation:pulse 1s infinite alternate"></div>`).join('')}
-    </div>`;
-}
-
-async function fetchQualities(url) {
-  if (!API) return;
-  try {
-    const meta = await fetch(`${API}/metadata`, {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({url})
-    }).then(r => r.json());
-
-    const qualities = meta.qualities || [];
-    document.getElementById('quality-loading').textContent = '';
-    document.getElementById('quality-chips').dataset.title = meta.title || '';
-
-    if (qualities.length === 0) {
-      document.getElementById('quality-chips').innerHTML = `<span style="font-size:12px;color:var(--text-muted)">Qualidades não detectadas — será baixado na melhor disponível</span>`;
-      selectedQuality = 'best';
-      return;
-    }
-
-    // Seleciona automaticamente a melhor disponível
-    selectedQuality = qualities[0].value;
-
-    document.getElementById('quality-chips').innerHTML = qualities.map((q, i) =>
-      `<div class="option-chip ${i===0?'selected':''}" onclick="selectQuality(this,'${q.value}')">${q.label}</div>`
-    ).join('');
-
-  } catch(e) {
-    document.getElementById('quality-loading').textContent = 'Erro ao buscar qualidades';
-    document.getElementById('quality-chips').innerHTML = `<span style="font-size:12px;color:var(--red)">Não foi possível buscar as qualidades</span>`;
-  }
-}
-
 function selectQuality(el, q) {
-  document.querySelectorAll('#quality-chips .option-chip').forEach(c => c.classList.remove('selected'));
+  document.querySelectorAll('.options-row .option-chip').forEach(c => c.classList.remove('selected'));
   el.classList.add('selected');
   selectedQuality = q;
 }
 
 function selectFormat(el, f) {
-  document.querySelectorAll('.options-row .option-chip').forEach(c=>{
-    if(['MP4','WebM','MKV','🎵 Só áudio'].some(x=>c.textContent.trim()===x)) c.classList.remove('selected');
-  });
+  // só deseleciona chips de formato (segunda linha)
+  el.closest('.options-row').querySelectorAll('.option-chip').forEach(c => c.classList.remove('selected'));
   el.classList.add('selected');
-  selectedFormat = f === 'audio' ? 'mp4' : f;
-  if(f === 'audio') selectedQuality = 'audio';
+  selectedFormat = f;
 }
 
 // ─────────────────────────────────────────────
