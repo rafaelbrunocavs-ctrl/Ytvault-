@@ -1020,27 +1020,16 @@
   </div>
 
   <div class="nav-section">
-    <div class="nav-label">Categorias</div>
-    <div class="nav-item" onclick="filterCategory('Música')">
-      <span class="nav-icon">♪</span>
-      <span>Música</span>
+    <div class="nav-label" style="display:flex;justify-content:space-between;align-items:center;padding-right:4px">
+      <span>Coleções</span>
+      <button onclick="openNewCollection()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:16px;padding:0;line-height:1" title="Nova coleção">+</button>
     </div>
-    <div class="nav-item" onclick="filterCategory('Tecnologia')">
-      <span class="nav-icon">⌨</span>
-      <span>Tecnologia</span>
-    </div>
-    <div class="nav-item" onclick="filterCategory('Educação')">
-      <span class="nav-icon">📖</span>
-      <span>Educação</span>
-    </div>
-    <div class="nav-item" onclick="filterCategory('Entretenimento')">
-      <span class="nav-icon">🎬</span>
-      <span>Entretenimento</span>
-    </div>
-    <div class="nav-item" onclick="filterCategory('Esportes')">
-      <span class="nav-icon">⚽</span>
-      <span>Esportes</span>
-    </div>
+    <div id="collections-nav"></div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-label">Canais</div>
+    <div id="channels-nav"></div>
   </div>
 
   <div class="sidebar-bottom">
@@ -1128,9 +1117,14 @@
         <div class="option-chip" onclick="selectFormat(this,'mkv')">MKV</div>
       </div>
 
-      <div class="notice">
-        <span>ℹ️</span>
-        <span><strong>Como usar na prática:</strong> Este app é uma interface visual. Para baixar de verdade, integre com <strong>yt-dlp</strong> no backend. O frontend gerencia fila, biblioteca e metadados — o backend faz o download real. Veja os comentários no código para detalhes da integração.</span>
+      <div style="margin-top:14px">
+        <label style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;font-weight:500;display:block;margin-bottom:6px">📁 Adicionar à coleção</label>
+        <div style="display:flex;gap:8px">
+          <select id="collection-select" class="form-input form-select" style="flex:1;font-size:13px;padding:9px 32px 9px 12px">
+            <option value="">Nenhuma (só biblioteca geral)</option>
+          </select>
+          <button onclick="openNewCollection()" style="padding:9px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;color:var(--text-muted);cursor:pointer;font-size:18px;flex-shrink:0">+</button>
+        </div>
       </div>
     </div>
 
@@ -1166,14 +1160,9 @@
         </div>
       </div>
 
-      <div class="filter-row">
+      <div class="filter-row" id="filter-row">
         <span class="filter-label">Filtrar:</span>
         <button class="filter-btn active" onclick="setFilter('all', this)">Todos</button>
-        <button class="filter-btn" onclick="setFilter('Música', this)">♪ Música</button>
-        <button class="filter-btn" onclick="setFilter('Tecnologia', this)">⌨ Tecnologia</button>
-        <button class="filter-btn" onclick="setFilter('Educação', this)">📖 Educação</button>
-        <button class="filter-btn" onclick="setFilter('Entretenimento', this)">🎬 Entretenimento</button>
-        <button class="filter-btn" onclick="setFilter('Esportes', this)">⚽ Esportes</button>
       </div>
 
       <div id="video-container"></div>
@@ -1237,6 +1226,39 @@
   </div>
 </div>
 
+<!-- MODAL: Nova Coleção -->
+<div class="modal-overlay" id="collection-modal" onclick="closeCollectionModalOutside(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">📁 Nova Coleção</div>
+      <button class="modal-close" onclick="closeCollectionModal()">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nome da coleção</label>
+      <input class="form-input" type="text" id="new-collection-name" placeholder="ex: Alanzoka - Alan Wake 2">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Emoji (opcional)</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap" id="emoji-picker">
+        <span onclick="selectEmoji(this)" style="cursor:pointer;font-size:22px;padding:4px;border-radius:6px;border:2px solid transparent">🎮</span>
+        <span onclick="selectEmoji(this)" style="cursor:pointer;font-size:22px;padding:4px;border-radius:6px;border:2px solid transparent">🎬</span>
+        <span onclick="selectEmoji(this)" style="cursor:pointer;font-size:22px;padding:4px;border-radius:6px;border:2px solid transparent">🎵</span>
+        <span onclick="selectEmoji(this)" style="cursor:pointer;font-size:22px;padding:4px;border-radius:6px;border:2px solid transparent">📚</span>
+        <span onclick="selectEmoji(this)" style="cursor:pointer;font-size:22px;padding:4px;border-radius:6px;border:2px solid transparent">⚽</span>
+        <span onclick="selectEmoji(this)" style="cursor:pointer;font-size:22px;padding:4px;border-radius:6px;border:2px solid transparent">🍳</span>
+        <span onclick="selectEmoji(this)" style="cursor:pointer;font-size:22px;padding:4px;border-radius:6px;border:2px solid transparent">💻</span>
+        <span onclick="selectEmoji(this)" style="cursor:pointer;font-size:22px;padding:4px;border-radius:6px;border:2px solid transparent">🌍</span>
+        <span onclick="selectEmoji(this)" style="cursor:pointer;font-size:22px;padding:4px;border-radius:6px;border:2px solid transparent">😂</span>
+        <span onclick="selectEmoji(this)" style="cursor:pointer;font-size:22px;padding:4px;border-radius:6px;border:2px solid transparent">🎨</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeCollectionModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="createCollection()">Criar coleção</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOASTS -->
 <div class="toasts" id="toasts"></div>
 
@@ -1253,10 +1275,16 @@ let currentView = 'grid';
 let currentFilter = 'all';
 let selectedQuality = '1080p';
 let selectedFormat = 'mp4';
+let selectedEmoji = '📁';
 
 let library = [];
 let queue = [];
 let nextId = 100;
+let collections = JSON.parse(localStorage.getItem('ytvault_collections') || '[]');
+
+function saveCollections() {
+  localStorage.setItem('ytvault_collections', JSON.stringify(collections));
+}
 
 // ─────────────────────────────────────────────
 // RENDER
@@ -1265,13 +1293,31 @@ function renderAll() {
   renderLibrary();
   renderQueue();
   updateStats();
+  renderSidebarCollections();
+  renderSidebarChannels();
+  renderFilterRow();
+  updateCollectionSelect();
 }
 
 function renderLibrary() {
   let filtered = library;
   const q = document.getElementById('search-input').value.toLowerCase();
-  if (q) filtered = filtered.filter(v => v.title.toLowerCase().includes(q) || v.channel.toLowerCase().includes(q) || v.tags.some(t => t.includes(q)));
-  if (currentFilter !== 'all') filtered = filtered.filter(v => v.category === currentFilter);
+  if (q) filtered = filtered.filter(v => v.title.toLowerCase().includes(q) || v.channel.toLowerCase().includes(q) || (v.tags||[]).some(t => t.includes(q)));
+
+  if (currentFilter === 'fav_special') {
+    filtered = filtered.filter(v => v.favorite);
+  } else if (currentFilter === 'recent') {
+    filtered = [...filtered].sort((a,b) => b.date - a.date).slice(0, 20);
+  } else if (currentFilter.startsWith('collection:')) {
+    const colId = currentFilter.replace('collection:', '');
+    const col = collections.find(c => c.id === colId);
+    filtered = col ? filtered.filter(v => col.videoIds.includes(String(v.id))) : [];
+  } else if (currentFilter.startsWith('channel:')) {
+    const ch = currentFilter.replace('channel:', '');
+    filtered = filtered.filter(v => v.channel === ch);
+  } else if (currentFilter !== 'all') {
+    filtered = filtered.filter(v => v.category === currentFilter);
+  }
 
   const sort = document.getElementById('sort-select').value;
   if (sort === 'title') filtered = [...filtered].sort((a,b) => a.title.localeCompare(b.title));
@@ -1397,10 +1443,12 @@ async function addToQueue() {
     return;
   }
 
+  const selectedColId = document.getElementById('collection-select')?.value || '';
+
   // Busca metadados primeiro
   const localId = nextId++;
   const item = { id: localId, url, quality: selectedQuality, format: selectedFormat,
-    title: 'Buscando informações do vídeo…', progress: 0, status: 'queue', jobId: null };
+    title: 'Buscando informações do vídeo…', progress: 0, status: 'queue', jobId: null, colId: selectedColId };
   queue.unshift(item);
   document.getElementById('url-input').value = '';
   renderAll();
@@ -1456,10 +1504,13 @@ function pollProgress(localId, jobId) {
         item.status = 'done';
         if (data.info) {
           library.unshift({...data.info, favorite: false});
+          // Adiciona à coleção selecionada
+          if (item.colId) {
+            addVideoToCollection(data.info.id, item.colId);
+          }
         }
         renderAll();
         showToast(`"${item.title.substring(0,35)}…" baixado com sucesso! ✅`, 'success');
-        // Recarrega biblioteca do servidor
         loadLibrary();
       } else if (data.status === 'error') {
         clearInterval(interval);
@@ -1572,23 +1623,143 @@ function sortLibrary() { renderLibrary(); }
 function switchTab(tab) {
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   event.currentTarget.classList.add('active');
-  if(tab==='favorites') { currentFilter='fav_special'; renderLibrarySpecial('fav_special'); }
-  else if(tab==='recent') { currentFilter='recent'; renderLibrarySpecial('recent'); }
-  else { currentFilter='all'; renderLibrary(); }
+  if(tab==='favorites') { currentFilter='fav_special'; document.getElementById('library-title').textContent='Favoritos'; renderLibrary(); }
+  else if(tab==='recent') { currentFilter='recent'; document.getElementById('library-title').textContent='Recentes'; renderLibrary(); }
+  else { currentFilter='all'; document.getElementById('library-title').textContent='Biblioteca'; renderLibrary(); }
+}
+
+// ─────────────────────────────────────────────
+// COLLECTIONS
+// ─────────────────────────────────────────────
+function renderSidebarCollections() {
+  const el = document.getElementById('collections-nav');
+  if(!el) return;
+  if(collections.length === 0) {
+    el.innerHTML = `<div style="font-size:12px;color:var(--text-dim);padding:6px 10px">Nenhuma coleção ainda</div>`;
+    return;
+  }
+  el.innerHTML = collections.map(col => {
+    const count = library.filter(v => col.videoIds.includes(String(v.id))).length;
+    return `<div class="nav-item" onclick="filterByCollection('${col.id}')">
+      <span class="nav-icon">${col.emoji}</span>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${col.name}</span>
+      <span class="nav-badge">${count}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderSidebarChannels() {
+  const el = document.getElementById('channels-nav');
+  if(!el) return;
+  const channels = [...new Set(library.map(v => v.channel).filter(Boolean))];
+  if(channels.length === 0) {
+    el.innerHTML = `<div style="font-size:12px;color:var(--text-dim);padding:6px 10px">Nenhum canal ainda</div>`;
+    return;
+  }
+  el.innerHTML = channels.map(ch => {
+    const count = library.filter(v => v.channel === ch).length;
+    return `<div class="nav-item" onclick="filterByChannel('${ch.replace(/'/g,"\\'")}')">
+      <span class="nav-icon">📺</span>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ch}</span>
+      <span class="nav-badge">${count}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderFilterRow() {
+  const row = document.getElementById('filter-row');
+  if(!row) return;
+  const collectionFilters = collections.map(col =>
+    `<button class="filter-btn ${currentFilter==='collection:'+col.id?'active':''}" onclick="setFilter('collection:${col.id}',this)">${col.emoji} ${col.name}</button>`
+  ).join('');
+  row.innerHTML = `
+    <span class="filter-label">Filtrar:</span>
+    <button class="filter-btn ${currentFilter==='all'?'active':''}" onclick="setFilter('all',this)">Todos</button>
+    ${collectionFilters}
+  `;
+}
+
+function updateCollectionSelect() {
+  const sel = document.getElementById('collection-select');
+  if(!sel) return;
+  const current = sel.value;
+  sel.innerHTML = `<option value="">Nenhuma (só biblioteca geral)</option>` +
+    collections.map(c => `<option value="${c.id}" ${current===c.id?'selected':''}>${c.emoji} ${c.name}</option>`).join('');
+}
+
+function filterByCollection(id) {
+  currentFilter = 'collection:' + id;
+  const col = collections.find(c => c.id === id);
+  document.getElementById('library-title').textContent = col ? `${col.emoji} ${col.name}` : 'Coleção';
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  renderLibrary();
+  renderFilterRow();
+  closeSidebar();
+}
+
+function filterByChannel(ch) {
+  currentFilter = 'channel:' + ch;
+  document.getElementById('library-title').textContent = `📺 ${ch}`;
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  renderLibrary();
+  closeSidebar();
+}
+
+function openNewCollection() {
+  document.getElementById('collection-modal').classList.add('open');
+  document.getElementById('new-collection-name').focus();
+}
+
+function closeCollectionModal() {
+  document.getElementById('collection-modal').classList.remove('open');
+  document.getElementById('new-collection-name').value = '';
+  selectedEmoji = '📁';
+  document.querySelectorAll('#emoji-picker span').forEach(e => e.style.border = '2px solid transparent');
+}
+
+function closeCollectionModalOutside(e) {
+  if(e.target === document.getElementById('collection-modal')) closeCollectionModal();
+}
+
+function selectEmoji(el) {
+  document.querySelectorAll('#emoji-picker span').forEach(e => e.style.border = '2px solid transparent');
+  el.style.border = '2px solid var(--accent)';
+  selectedEmoji = el.textContent;
+}
+
+function createCollection() {
+  const name = document.getElementById('new-collection-name').value.trim();
+  if(!name) { showToast('Digite um nome para a coleção!','error'); return; }
+  const col = { id: Date.now().toString(), name, emoji: selectedEmoji, videoIds: [] };
+  collections.push(col);
+  saveCollections();
+  closeCollectionModal();
+  renderAll();
+  showToast(`Coleção "${name}" criada!`, 'success');
+}
+
+function deleteCollection(id) {
+  collections = collections.filter(c => c.id !== id);
+  saveCollections();
+  if(currentFilter === 'collection:' + id) { currentFilter = 'all'; document.getElementById('library-title').textContent = 'Biblioteca'; }
+  renderAll();
+  showToast('Coleção removida','info');
+}
+
+function addVideoToCollection(videoId, colId) {
+  const col = collections.find(c => c.id === colId);
+  if(!col) return;
+  if(!col.videoIds.includes(String(videoId))) {
+    col.videoIds.push(String(videoId));
+    saveCollections();
+    renderAll();
+    showToast(`Adicionado a "${col.name}"!`,'success');
+  }
 }
 
 function renderLibrarySpecial(mode) {
-  let filtered = mode==='fav_special' ? library.filter(v=>v.favorite) : [...library].sort((a,b)=>b.date-a.date).slice(0,20);
-  document.getElementById('library-title').textContent = mode==='fav_special'?'Favoritos':'Adicionados Recentemente';
-  document.getElementById('library-count').textContent = `${filtered.length} vídeo${filtered.length!==1?'s':''}`;
-  const container = document.getElementById('video-container');
-  if(filtered.length===0) {
-    container.innerHTML = `<div class="empty-state"><div class="empty-icon">${mode==='fav_special'?'💔':'📭'}</div><div class="empty-title">${mode==='fav_special'?'Nenhum favorito ainda':'Sem vídeos recentes'}</div><div class="empty-sub">${mode==='fav_special'?'Marque vídeos com ♥ para adicioná-los aqui.':''}</div></div>`;
-    return;
-  }
-  const wrap = currentView==='grid'?'video-grid':'video-list';
-  const fn = currentView==='grid'?videoCard:videoListItem;
-  container.innerHTML = `<div class="${wrap}">${filtered.map(fn).join('')}</div>`;
+  // now handled inside renderLibrary
+  renderLibrary();
 }
 
 // ─────────────────────────────────────────────
